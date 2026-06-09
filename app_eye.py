@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image
 import torch
-from torchvision.models import resnet34
+from torchvision.models import resnet50 # PERBAIKAN: Impor resnet50
 from fastai.vision.learner import create_vision_model
 from torchvision import transforms
 
@@ -9,7 +9,7 @@ from torchvision import transforms
 st.set_page_config(page_title="Aplikasi Analisis & Augmentasi Citra", layout="wide")
 
 st.title("Aplikasi Augmentasi & Klasifikasi Citra Mata")
-st.markdown("Aplikasi ini secara otomatis melakukan augmentasi (Flip & Rotate) pada gambar yang diunggah dan melakukan prediksi menggunakan model FastAI (`.pth`) dengan perbaikan kompatibilitas PyTorch 2.6+.")
+st.markdown("Aplikasi ini secara otomatis melakukan augmentasi (Flip & Rotate) pada gambar yang diunggah dan melakukan prediksi menggunakan model FastAI (`.pth`).")
 
 # 1. Preprocessing Gambar untuk Inferensi Model
 preprocess = transforms.Compose([
@@ -18,14 +18,14 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# 2. Fungsi Memuat Model dengan Arsitektur FastAI dan Proteksi PyTorch 2.6+
+# 2. Fungsi Memuat Model dengan Arsitektur FastAI
 @st.cache_resource
 def load_fastai_model(uploaded_file):
     try:
-        # Menggunakan create_vision_model agar struktur layer cocok dengan model FastAI Anda
-        model = create_vision_model(resnet34, n_out=5, pretrained=False)
+        # PERBAIKAN: Menggunakan resnet50 sesuai dengan bobot (weights) pada file .pth
+        model = create_vision_model(resnet50, n_out=5, pretrained=False)
         
-        # SOLUSI ERROR PYTORCH 2.6+: Menggunakan weights_only=False untuk mengizinkan objek dari fastcore/fastai
+        # weights_only=False diperlukan untuk membaca objek FastAI (PyTorch 2.6+)
         state_dict = torch.load(uploaded_file, map_location=torch.device('cpu'), weights_only=False)
         
         # Penanganan jika state_dict tersimpan di dalam dictionary dengan kunci 'model'
