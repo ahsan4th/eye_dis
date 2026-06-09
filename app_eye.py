@@ -9,7 +9,7 @@ from torchvision import transforms
 st.set_page_config(page_title="Aplikasi Analisis & Augmentasi Citra", layout="wide")
 
 st.title("Aplikasi Augmentasi & Klasifikasi Citra Mata")
-st.markdown("Aplikasi ini secara otomatis menguji gambar dengan augmentasi (Flip & Rotate) sesuai logika notebook Anda dan melakukan prediksi menggunakan model FastAI (`.pth`).")
+st.markdown("Aplikasi ini secara otomatis melakukan augmentasi (Flip & Rotate) pada gambar yang diunggah dan melakukan prediksi menggunakan model FastAI (`.pth`) dengan perbaikan kompatibilitas PyTorch 2.6+.")
 
 # 1. Preprocessing Gambar untuk Inferensi Model
 preprocess = transforms.Compose([
@@ -18,15 +18,15 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# 2. Fungsi Memuat Model dengan Arsitektur FastAI
+# 2. Fungsi Memuat Model dengan Arsitektur FastAI dan Proteksi PyTorch 2.6+
 @st.cache_resource
 def load_fastai_model(uploaded_file):
     try:
-        # Menggunakan create_vision_model agar struktur layer (0.0.weight, dll) cocok dengan FastAI
+        # Menggunakan create_vision_model agar struktur layer cocok dengan model FastAI Anda
         model = create_vision_model(resnet34, n_out=5, pretrained=False)
         
-        # Memuat state_dict
-        state_dict = torch.load(uploaded_file, map_location=torch.device('cpu'))
+        # SOLUSI ERROR PYTORCH 2.6+: Menggunakan weights_only=False untuk mengizinkan objek dari fastcore/fastai
+        state_dict = torch.load(uploaded_file, map_location=torch.device('cpu'), weights_only=False)
         
         # Penanganan jika state_dict tersimpan di dalam dictionary dengan kunci 'model'
         if isinstance(state_dict, dict) and 'model' in state_dict:
@@ -39,7 +39,7 @@ def load_fastai_model(uploaded_file):
         st.error(f"Gagal memuat model. Pastikan file arsitektur sesuai. Error: {e}")
         return None
 
-# 3. Fungsi Augmentasi Otomatis (Sesuai Notebook)
+# 3. Fungsi Augmentasi Otomatis (Sesuai dengan notebook augment_images.ipynb)
 def apply_augmentations(img):
     augmented_images = {
         "Original": img,
@@ -78,7 +78,7 @@ if image_file is not None:
     img = Image.open(image_file).convert('RGB')
     
     st.subheader("Visualisasi Augmentasi Otomatis")
-    # Menjalankan fungsi augmentasi secara *real-time*
+    # Menjalankan fungsi augmentasi secara real-time
     dict_augmented = apply_augmentations(img)
     
     # Menampilkan hasil berdampingan ke dalam kolom
